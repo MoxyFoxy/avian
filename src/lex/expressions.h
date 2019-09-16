@@ -1,103 +1,171 @@
 #include <vector>
 
 enum ExpressionType {
-    INITIALIZATION, ARRAYINIT, ASSIGNMENT,
-    ADD, SUB, MUL, DIV, MOD,
-    GREATER, LESS, INV, COM,
-    SPLICE,
-    CALL, METHODCALL,
-}
+    INITIALIZATION, ARRAYINIT, ASSIGNMENT, // Initializations
+    ADD, SUB, MUL, DIV, MOD,              // Math Operators
+    GREATER, LESS, INV, COM,             // Conditional Operators
+    IF, ELSEIF, ELSE,                   // Conditionals
+    SPLICE, CURLY,                     // Brackets
+    CALL, METHODCALL,                 // Functions / Methods
+    VARIABLE, IMPORT, IMPORTAS       // Variables and Imports
+};
 
-struct Expression {}
+// Base Expression struct
+struct Expression {
+    const int type;
+};
+
+/*
+ * Initializations
+ */
 
 struct Initialization : Expression {
-    const KeywordToken* type;
-    const NamedToken* name;
+    const KeywordToken* vartype;
+    const NamedToken* varname;
 
-    const int type = ExpressionType::INITIALIZATION;
-}
+    type = ExpressionType::INITIALIZATION;
+};
 
 struct ArrayInitialization : Expression {
-    const KeywordToken* type;
-    const NamedToken* name;
+    const KeywordToken* vartype;
+    const NamedToken* varname;
     const int arraySize;
 
-    const int type = ExpressionType::ARRAYINIT;
-}
+    type = ExpressionType::ARRAYINIT;
+};
 
 struct Assignment : Expression {
-    const NamedToken* name;
+    const NamedToken* varname;
     const Expression* assignment;
 
-    const int type = ExpressionType::ASSIGNMENT;
-}
+    type = ExpressionType::ASSIGNMENT;
+};
 
-
+/*
+ * Math Operators
+ */
 
 struct Operator : Expression {
     const Expression* left;
     const Expression* right;
-}
+};
 
 struct Add : Operator {
-    const int type = ExpressionType::ADD;
-}
+    type = ExpressionType::ADD;
+};
 
 struct Sub : Operator {
-    const int type = ExpressionType::SUB;
-}
+    type = ExpressionType::SUB;
+};
 
 struct Mul : Operator {
-    const int type = ExpressionType::MUL;
-}
+    type = ExpressionType::MUL;
+};
 
 struct Div : Operator {
-    const int type = ExpressionType::DIV;
-}
+    type = ExpressionType::DIV;
+};
 
 struct Mod : Operator {
-    const int type = ExpressionType::MOD;
-}
+    type = ExpressionType::MOD;
+};
 
-
+/*
+ * Conditional Operators
+ */
 
 struct Greater : Operator {
-    const int type = ExpressionType::GREATER;
-}
+    type = ExpressionType::GREATER;
+};
 
 struct Less : Operator {
-    const int type = ExpressionType::LESS;
-}
+    type = ExpressionType::LESS;
+};
 
 struct Inv : Operator {
-    const int type = ExpressionType::INV;
-}
+    type = ExpressionType::INV;
+};
 
 struct Com : Operator {
-    const int type = ExpressionType::COM;
-}
+    type = ExpressionType::COM;
+};
 
+/*
+ * Conditionals
+ */
 
+struct Conditional : Expression {
+    const CurlyExpression* curly;
+};
+
+struct If : Conditional {
+    const Expression* condition;
+
+    type = ExpressionType::IF;
+};
+
+struct ElseIf : If {
+    type = ExpressionType::ELSEIF;
+};
+
+struct Else : Conditional {
+    type = ExpressionType::ELSE;
+};
+
+/*
+ * Brackets
+ */
 
 struct Splice : Expression {
     const Expression* leftSplice;
-    const Expression* rightSplice;
-    const Expression* step;
+    const Expression* rightSplice = -1;
+    const Expression* step = -1;
 
-    const int type = ExpressionType::SPLICE;
-}
+    type = ExpressionType::SPLICE;
+};
 
+struct CurlyExpression : Expression {
+    const Expression* statements [];
 
+    type = ExpressionType::CURLY;
+};
+
+/*
+ * Functions / Methods
+ */
 
 struct Call : Expression {
     const NamedToken* funcname;
     const Expression* parameters [];
 
-    const int type = ExpressionType::CALL;
-}
+    type = ExpressionType::CALL;
+};
 
 struct MethodCall : Call {
     const NamedToken* classname;
 
-    const int type = ExpressionType::METHODCALL;
-}
+    type = ExpressionType::METHODCALL;
+};
+
+/*
+ * Variables and imports
+ */
+
+struct Variable : Expression {
+    const NamedToken* vartype;
+    const NamedToken* varname;
+
+    type = ExpressionType::VARIABLE;
+};
+
+struct Import : Expression {
+    const NamedToken* imports [];
+
+    type = ExpressionType::IMPORT;
+};
+
+struct ImportAs : Import {
+    const NamedToken* asnames [];
+
+    type = ExpressionType::IMPORTAS;
+};

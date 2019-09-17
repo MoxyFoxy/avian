@@ -1,18 +1,19 @@
 #include <vector>
 
 enum ExpressionType {
-    INITIALIZATION, ARRAYINIT, ASSIGNMENT, // Initializations
-    ADD, SUB, MUL, DIV, MOD,              // Math Operators
-    GREATER, LESS, INV, COM,             // Conditional Operators
-    IF, ELSEIF, ELSE,                   // Conditionals
-    SPLICE, CURLY,                     // Brackets
-    CALL, METHODCALL,                 // Functions / Methods
-    VARIABLE, IMPORT, IMPORTAS       // Variables and Imports
+    INITIALIZATION, ARRAYINIT, ASSIGNMENT,      // Initializations
+    CLASSINIT, INTERFACEINIT,                  // Class and Interface Initialization
+    ADD, SUB, MUL, DIV, MOD,                  // Math Operators
+    GREATER, LESS, INV, COM,                 // Conditional Operators
+    IF, ELSEIF, ELSE,                       // Conditionals
+    SPLICE, CURLY,                         // Brackets
+    FUNCTION, METHOD, CALL, METHODCALL,   // Functions / Methods
+    VARIABLE, CLASSVAR, IMPORT, IMPORTAS // Variables and Imports
 };
 
 // Base Expression struct
 struct Expression {
-    const int type;
+    int type;
 };
 
 /*
@@ -20,15 +21,13 @@ struct Expression {
  */
 
 struct Initialization : Expression {
-    const KeywordToken* vartype;
+    const NamedToken* vartype;
     const NamedToken* varname;
 
     type = ExpressionType::INITIALIZATION;
 };
 
 struct ArrayInitialization : Expression {
-    const KeywordToken* vartype;
-    const NamedToken* varname;
     const int arraySize;
 
     type = ExpressionType::ARRAYINIT;
@@ -39,6 +38,25 @@ struct Assignment : Expression {
     const Expression* assignment;
 
     type = ExpressionType::ASSIGNMENT;
+};
+
+struct ClassInit : Expression {
+    const NamedToken* classname;
+    const NamedToken* extends;
+    const NamedToken* implements;
+
+    const CurlyExpression* classcurly;
+
+    type = ExpressionType::CLASSINIT;
+};
+
+struct InterfaceInit : Expression {
+    const NamedToken* intername;
+    const NamedToken* implements;
+    
+    const CurlyExpression* intercurly;
+
+    type = ExpressionType::INTERFACEINIT;
 };
 
 /*
@@ -134,6 +152,19 @@ struct CurlyExpression : Expression {
  * Functions / Methods
  */
 
+struct Function : Expression {
+    const NamedToken* funcname;
+    const NamedToken* parameters [];
+
+    type = ExpressionType::FUNCTION;
+};
+
+struct Method : Function {
+    const NamedToken* classname;
+
+    type = ExpressionType::METHOD;
+};
+
 struct Call : Expression {
     const NamedToken* funcname;
     const Expression* parameters [];
@@ -155,7 +186,17 @@ struct Variable : Expression {
     const NamedToken* vartype;
     const NamedToken* varname;
 
+    const bool isStatic;
+    const bool isRef;
+
     type = ExpressionType::VARIABLE;
+};
+
+struct ClassVariable : Variable {
+    const bool hasGetter;
+    const bool hasSetter;
+
+    type = ExpressionType::CLASSVAR;
 };
 
 struct Import : Expression {

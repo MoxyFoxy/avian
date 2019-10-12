@@ -3,8 +3,8 @@
 enum ExpressionType {
     INITIALIZATION, ARRAYINIT, ASSIGNMENT,      // Initializations
     CLASSINIT, INTERFACEINIT,                  // Class and Interface Initialization
-    ADD, SUB, MUL, DIV, MOD,                  // Math Operators
-    GREATER, LESS, INV, COM,                 // Conditional Operators
+    ADD, SUB, MUL, DIV, MOD, EXP,             // Math Operators
+    GREATER, LESS, EQUAL, INV, COM,          // Conditional Operators
     IF, ELSEIF, ELSE,                       // Conditionals
     SPLICE, CURLY,                         // Brackets
     FUNCTION, METHOD, CALL, METHODCALL,   // Functions / Methods
@@ -21,40 +21,36 @@ struct Expression {
  */
 
 struct Initialization : Expression {
-    const NamedToken* vartype;
-    const NamedToken* varname;
+    const NamedToken* name;
 
     type = ExpressionType::INITIALIZATION;
 };
 
-struct ArrayInitialization : Expression {
+struct ArrayInitialization : Initialization {
     const int arraySize;
 
     type = ExpressionType::ARRAYINIT;
 };
 
-struct Assignment : Expression {
-    const NamedToken* varname;
+struct Assignment : Initialization {
     const Expression* assignment;
 
     type = ExpressionType::ASSIGNMENT;
 };
 
-struct ClassInit : Expression {
-    const NamedToken* classname;
+struct ClassInit : Initialization {
     const NamedToken* extends;
     const NamedToken* implements;
 
-    const CurlyExpression* classcurly;
+    const CurlyExpression* curly;
 
     type = ExpressionType::CLASSINIT;
 };
 
-struct InterfaceInit : Expression {
-    const NamedToken* intername;
+struct InterfaceInit : Initialization {
     const NamedToken* implements;
     
-    const CurlyExpression* intercurly;
+    const CurlyExpression* curly;
 
     type = ExpressionType::INTERFACEINIT;
 };
@@ -88,6 +84,10 @@ struct Mod : Operator {
     type = ExpressionType::MOD;
 };
 
+struct Exp: Operator {
+    type = ExpressionType::EXP;
+};
+
 /*
  * Conditional Operators
  */
@@ -99,6 +99,10 @@ struct Greater : Operator {
 struct Less : Operator {
     type = ExpressionType::LESS;
 };
+
+struct Equal : Operator {
+    type = ExpressionType::EQUAL;
+}
 
 struct Inv : Operator {
     type = ExpressionType::INV;
@@ -128,6 +132,35 @@ struct ElseIf : If {
 
 struct Else : Conditional {
     type = ExpressionType::ELSE;
+};
+
+/*
+ * Loops
+ */
+
+struct Loop : Expression {
+    const CurlyExpression* curly;
+
+    type = ExpressionType::LOOP;
+};
+
+struct For : Loop {
+    const Expression* iterator;
+    const Expression* condition;
+    const Expression* iteration;
+
+    type = ExpressionType::FOR;
+};
+
+struct ForIn : Loop {
+    const NamedToken* variable;
+    const Expression* collection;
+
+    type = ExpressionType::FORIN;
+};
+
+struct While : Loop {
+    const Expression* condition;
 };
 
 /*
@@ -200,6 +233,7 @@ struct ClassVariable : Variable {
 };
 
 struct Import : Expression {
+    const StringToken* link;
     const NamedToken* imports [];
 
     type = ExpressionType::IMPORT;

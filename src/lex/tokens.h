@@ -3,7 +3,7 @@
 #include <string>
 
 enum Tokens {
-    T_EOF,
+    EOF,
 
     // Types
     T_STRING, T_CHAR, T_BYTE, T_BOOL, T_NULL, T_INT, T_INT8, T_INT16, T_INT64, T_UNSIGNED, T_FLOAT, T_VAR, T_FUNC,
@@ -12,7 +12,7 @@ enum Tokens {
     ADD, SUB, MUL, DIV, MOD,
 
     // Byte
-    GREATER, LESS, INV, COM,
+    GREATER, LESS, INV, COM, XOR,
 
     // Additives
     STATIC, REF, DEREF, NEW, DELETE, FINAL, GLOBAL, DECORATOR,
@@ -21,7 +21,7 @@ enum Tokens {
     DEF, GET, SET, CLASS, EXTENDS, SELF, SUPER, ABSTRACT, INTERFACE, IMPLEMENTS, RETURN, HALT,
 
     // Conditionals
-    IF, ELSE, ELIF, AND, OR, XOR, NOT, IS, IN,
+    IF, ELSE, ELIF, AND, OR, NOT, IS, IN,
 
     // Loops
     FOR, WHILE,

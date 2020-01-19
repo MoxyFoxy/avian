@@ -9,7 +9,7 @@ The Pillars of Actor-Oriented Programming are:
 3. Inheritance
 4. Polymorphism
 
-"Wait," you might say, "two of those are from the three pillars of OOP!" and you'd be right. AOP is a paradigm based heavily on OOP, just taking away all of the power from data to act since they've been too naughty for too long with that privilege. Data should NOT act, it should ask for actors to act on it.
+"Wait," you might say, "two of those are from the three pillars of OOP!" and you'd be right. AOP is a paradigm based heavily on OOP, taking the best parts of it, but taking away all of the power from data to act since they've been too naughty for too long with that privilege. Data should NOT act, it should ask for actors to act on it.
 
 ## Actors
 This is the main focus of Actor-Oriented Programming, quite obviously. Actors are essentially both a namespace and an interface from OOP. Actors can have both procedures and actions. What's the diffference between the two? First, let's explain the concept of object precedence in parameters.

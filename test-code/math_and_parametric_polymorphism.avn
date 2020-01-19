@@ -1,0 +1,34 @@
+Calculator :: actor (T: type) {
+    add :: act(x, y: T) -> T {
+        return x + y;
+    }
+
+    sub :: act(x, y: T) -> T {
+        return x - y;
+    }
+
+    mul :: act(x, y: T) -> T {
+        return x * y;
+    }
+
+    div :: act(x, y: T) -> T {
+        return x / y;
+    }
+
+    mod :: act(x, y: T) -> T {
+        return x % y;
+    }
+}
+
+main :: proc() {
+    c := Calculator(int){};
+    
+    x := 10;
+    y := 5;
+
+    add := c.add(x, y);
+    sub := c.sub(x, y);
+    mul := c.mul(x, y);
+    div := c.div(x, y);
+    mod := c.mod(x, y);
+}

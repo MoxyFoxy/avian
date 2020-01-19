@@ -4,10 +4,10 @@ Offical repository for Avian, the first Actor-Oriented Programming Language. Fir
 What is Actor-Oriented Programming (AOP)? AOP is a new paradigm branching off from Object-Oriented Programming (OOP). AOP takes the focus away from the data and moves it back to the implementation. How is this achieved? Imagine a namespace had a baby with an interface, and you've got actors. Actors are the main focus of AOP.
 
 The Pillar of Actor-Oriented Programming are:
-    1. Explicitness over implicitness
-    2. Data cannot "act". Data must rely on actors to act for them.
-    3. Inheritance
-    4. Polymorphism
+1. Explicitness over implicitness
+2. Data cannot "act". Data must rely on actors to act for them.
+3. Inheritance
+4. Polymorphism
 
 "Wait," you might say, "two of those are from the three pillars of OOP!" and you'd be right. AOP is a paradigm based heavily on OOP, just taking away all of the power from data to act since they've been too naughty for too long with that privilege. Data should NOT act, it should ask for actors to act on it.
 

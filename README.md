@@ -17,7 +17,7 @@ This is the main focus of Actor-Oriented Programming, quite obviously. Actors ar
 ### Object Precedence
 When an object has precedence, that essentially means it's more important in the procedure/action then another parameter. Object precedence is an important concept in AOP. Let's take a car, for example, using Avian:
 ```
-Car :: obj [ACar] {
+Car :: obj {
     tires: [4]Tire,
 }
 

@@ -27,6 +27,13 @@ NamedToken :: struct {
     name  : string,
 }
 
+MemberToken :: struct {
+    line  : u32,
+    offset: u32,
+
+    name  : string,
+}
+
 StringToken :: struct {
     line  : u32,
     offset: u32,
@@ -80,7 +87,13 @@ ConstToken :: struct (T: typeid) {
 */
 
 check_for_closer :: inline proc(char: rune) -> bool {
-    return true;
+    switch char {
+        case '0'..'9', 'a'..'z', 'A'..'Z':
+            return true;
+            
+        case:
+            return false;
+    }
 }
 
 update_offset :: inline proc(char: rune) {
@@ -171,8 +184,8 @@ consume_octal :: inline proc() {
     warning(.T_UNEXPECTED_EOF);
 }
 
-// Consumes an 8bit, 16bit, or 32bit hex (\xnn, \xnnnn, \xnnnnnnnn)
-consume_unsigned_hex :: inline proc() {
+// Consumes an 8bit, 16bit, or 32bit unsigned hex (\xnn, \xnnnn, \xnnnnnnnn)
+consume_hex :: inline proc() {
 
     // FOR_C: Specifically for C transpilation
     strings.write_string(temp_token, "\\0x");
@@ -188,11 +201,8 @@ consume_unsigned_hex :: inline proc() {
         ok := check_for_closer(char);
 
         if (ok) {
-            #partial switch char {
-                case '0', '1', '2', '3', '4', '5', '6', '7', '8', '9':
-                case 'a', 'b', 'c', 'd', 'e', 'f':
-                case 'A', 'B', 'C', 'D', 'E', 'F':
-
+            switch char {
+                case '0'..'9', 'a'..'f', 'A'..'F':
                     // FOR_C: Specifically for C transpilation
                     strings.write_rune(temp_token, char);
 
@@ -218,11 +228,8 @@ consume_escape :: inline proc(char: rune) {
         case E_OCTAL:
             consume_octal();
 
-        case E_U_HEX:
-            consume_unsigned_hex();
-
-        case E_S_HEX:
-            consume_signed_hex();
+        case E_HEX:
+            consume_hex();
 
         case:
             warning(.T_INVALID_ESCAPE);
@@ -234,7 +241,32 @@ consume_escape :: inline proc(char: rune) {
 
 // Consumes an apostrophe. Could be either a member or a char
 consume_apostrophe :: proc() {
+    if (rune_at_pos(&input, 2) == '\'') {
+        push(&tokens, CharToken{start_line, start_offset, rune_at_pos(&input, 1)});
+        strings.reset_builder(temp_token);
+        
+        input = input[3:];
+    }
+    
+    else {
+        for len(input) > 0 {
+            char, n := utf.decode_rune(input);
+            input = input[n:];
+            
+            ok := check_for_closer(char);
+            
+            if (ok) {
+                strings.write_rune(char);
+            }
+            
+            else {
+                push(&tokens, MemberToken{strings.to_string(temp_token)});
+                strings.reset_builder(temp_token);
 
+                input = input[3:];
+            }
+        }
+    }
 }
 
 // TODO: Finish the tokenizer
@@ -269,9 +301,7 @@ tokenize :: proc(file: u32, input: []byte]) {
                 continue;
 
             case R_APOST:
-                consume_apostrophe(&input, temp_token, i);
-                push(&tokens, StringToken{strings.to_string(temp_token)});
-                strings.reset_builder(temp_token);
+                consume_apostrophe(&input, temp_token);
                 continue;
         }
     }

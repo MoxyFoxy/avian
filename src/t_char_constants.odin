@@ -31,8 +31,7 @@ E_CARRIAGE  :: 'r'; // Carriage return
 E_TAB       :: 't'; // Horizontal tab
 E_V_TAB     :: 'v'; // Vertical tab
 E_OCTAL     :: 'o'; // Octal value
-E_U_HEX     :: 'x'; // Unsigned 8, 16, or 32bit hex value
-E_S_HEX     :: 'X'; // Signed 8, 16, or 32bit hex value
+E_HEX       :: 'x'; // Unsigned 8, 16, or 32bit hex value
 E_UNI       :: 'u'; // 16bit unicode
 E_BIG_UNI   :: 'U'; // 32bit unicode
 

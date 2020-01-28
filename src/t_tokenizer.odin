@@ -10,24 +10,20 @@ Token :: union {
     CharToken,
     ConstToken,
     OPToken,
+    SpecialToken,
     EOFToken,
 }
 
 KeywordToken :: struct {
+    kind  : TokenKind,
+
     line  : u32,
     offset: u32,
-
-    name  : string,
 }
 
 NamedToken :: struct {
-    line  : u32,
-    offset: u32,
-
-    name  : string,
-}
-
-MemberToken :: struct {
+    kind  : TokenKind,
+    
     line  : u32,
     offset: u32,
 
@@ -35,41 +31,40 @@ MemberToken :: struct {
 }
 
 StringToken :: struct {
+    kind  : TokenKind,
+    
     line  : u32,
     offset: u32,
 
+    escape: bool,
     value : string,
-}
-
-CharToken :: struct {
-    line  : u32,
-    offset: u32,
-
-    value : rune,
-}
-
-ConstToken :: struct {
-    line  : u32,
-    offset: u32,
-
-    value : string,
-    type  : Type,
 }
 
 OPToken :: struct {
+    kind  : TokenKind,
+    
     line  : u32,
     offset: u32,
-
-    value : rune,
 }
 
+SpecialToken :: struct {
+    kind  : TokenKind,
+    
+    line  : u32,
+    offset: u32,
+}
+
+MalformedToken :: SpecialToken;
+
 EOLToken :: struct {
+    kind  : TokenKind,
+    
     line  : u32,
     offset: u32,
 }
 
 tokens: Stack(Token);
-input: []byte;
+input: []rune;
 temp_token: ^strings.Builder;
 file: u32;
 line: u32;
@@ -96,6 +91,20 @@ check_for_closer :: inline proc(char: rune) -> bool {
     }
 }
 
+check_for_special :: inline proc(char: rune) -> bool {
+    switch char {
+        case '~', '`', '!', '@', '#', '$', '%',
+             '^', '&', '*', '(', ')', '-', '+',
+             '=', '[', ']', '{', '}', '\\', '|',
+             ';', ':', '\'', '"', ',', '<', '.',
+             '>', '/', '?':
+            return true;
+
+        case:
+            return false;
+    }
+}
+
 update_offset :: inline proc(char: rune) {
     if (char == R_NEWLINE) {
         line += 1;
@@ -107,24 +116,276 @@ update_offset :: inline proc(char: rune) {
     }
 }
 
+consume_special :: inline proc(char: rune) {
+    switch char {
+        case '~':
+            push(&tokens, SpecialToken{.TILDE, start_line, start_offset});
+
+        case '`':
+            push(&tokens, SpecialToken{.BACKTICK, start_line, start_offset});
+    
+        case '!':
+            push(&tokens, SpecialToken{.NOT, start_line, start_offset});
+
+        case '@':
+            push(&tokens, SpecialToken{.AT, start_line, start_offset});
+
+        case '#':
+            push(&tokens, SpecialToken{.DECORATOR, start_line, start_offset});
+
+        case '$':
+            push(&tokens, SpecialToken{.DOLLAR, start_line, start_offset});
+
+        case '%':
+            push(&tokens, OPToken{.MOD, start_line, start_offset});
+
+        case '^':
+            push(&tokens, SpecialToken{.POINTER, start_line, start_offset});
+
+        case '&':
+            push(&tokens, SpecialToken{.AMPERSAND, start_line, start_offset});
+
+        case '*':
+            push(&tokens, SpecialToken{.MUL, start_line, start_offset});
+
+        case '(':
+            push(&tokens, SpecialToken{.LEFT_PAREN, start_line, start_offset});
+
+        case ')':
+            push(&tokens, SpecialToken{.RIGHT_PAREN, start_line, start_offset});
+
+        case '-':
+            push(&tokens, OPToken{.SUB, start_line, start_offset});
+
+        case '=':
+            push(&tokens, OPToken{.EQUAL, start_line, start_offset});
+
+        case '+':
+            push(&tokens, OPToken{.ADD, start_line, start_offset});
+
+        case '[':
+            push(&tokens, SpecialToken{.LEFT_SQUARE, start_line, start_offset});
+
+        case ']':
+            push(&tokens, SpecialToken{.RIGHT_SQUARE, start_line, start_offset});
+
+        case '{':
+            push(&tokens, SpecialToken{.SCOPE_START, start_line, start_offset});
+
+        case '}':
+            push(&tokens, SpecialToken{.SCOPE_END, start_line, start_offset});
+
+        case '\\':
+            push(&tokens, OPToken{.BACKSLASH, start_line, start_offset});
+
+        case '|':
+            push(&tokens, OPToken{.BIT_OR, start_line, start_offset});
+
+        case ';':
+            push(&tokens, SpecialToken{.EOL, start_line, start_offset});
+
+        case ':':
+            push(&tokens, SpecialToken{.COLON, start_line, start_offset});
+
+        case '\'':
+            push(&tokens, SpecialToken{.APOST, start_line, start_offset});
+
+        case ',':
+            push(&tokens, SpecialToken{.COMMA, start_line, start_offset});
+
+        case '<':
+            push(&tokens, SpecialToken{.LESSER, start_line, start_offset});
+
+        case '>':
+            push(&tokens, SpecialToken{.GREATER, start_line, start_offset});
+
+        case '.':
+            push(&tokens, SpecialToken{.DOT, start_line, start_offset});
+
+        case '/':
+            push(&tokens, SpecialToken{.DIV, start_line, start_offset});
+
+        case '?':
+            push(&tokens, SpecialToken{.QUESTION, start_line, start_offset});
+    
+        case:
+            push(&tokens, MalformedToken{.MALFORMED, start_line, start_offset});
+    }
+}
+
+check_for_keyword :: proc() {
+    check := strings.to_string(&temp_token);
+
+    switch check {
+        case "obj":
+            push(&tokens, KeywordToken{.OBJ, start_line, start_offset});
+
+        case "bvr":
+            push(&tokens, KeywordToken{.BEHAVIOR, start_line, start_offset});
+
+        case "character":
+            push(&tokens, KeywordToken{.CHARACTER, start_line, start_offset});
+
+        case "union":
+            push(&tokens, KeywordToken{.UNION, start_line, start_offset});
+
+        case "enum":
+            push(&tokens, KeywordToken{.ENUM, start_line, start_offset});
+
+        case "unique":
+            push(&tokens, KeywordToken{.UNIQUE, start_line, start_offset});
+
+        case "is":
+            push(&tokens, KeywordToken{.IS, start_line, start_offset});
+
+
+        case "if":
+            push(&tokens, KeywordToken{.IF, start_line, start_offset});
+
+        case "elseif":
+            push(&tokens, KeywordToken{.ELSEIF, start_line, start_offset});
+
+        case "else":
+            push(&tokens, KeywordToken{.ELSE, start_line, start_offset});
+
+        case "switch":
+            push(&tokens, KeywordToken{.SWITCH, start_line, start_offset});
+
+        case "case":
+            push(&tokens, KeywordToken{.CASE, start_line, start_offset});
+
+        case "for":
+            push(&tokens, KeywordToken{.FOR, start_line, start_offset});
+
+        case "in":
+            push(&tokens, KeywordToken{.IN, start_line, start_offset});
+
+        case "notin":
+            push(&tokens, KeywordToken{.NOTIN, start_line, start_offset});
+
+        case "while":
+            push(&tokens, KeywordToken{.WHILE, start_line, start_offset});
+
+        case "do":
+            push(&tokens, KeywordToken{.DO, start_line, start_offset});
+
+        case "break":
+            push(&tokens, KeywordToken{.BREAK, start_line, start_offset});
+
+        case "continue":
+            push(&tokens, KeywordToken{.CONTINUE, start_line, start_offset});
+
+        case "return":
+            push(&tokens, KeywordToken{.RETURN, start_line, start_offset});
+
+        case "proc":
+            push(&tokens, KeywordToken{.PROC, start_line, start_offset});
+
+        case "trait":
+            push(&tokens, KeywordToken{.TRAT, start_line, start_offset});
+
+        case "inline":
+            push(&tokens, KeywordToken{.INLINE, start_line, start_offset});
+
+        case "import":
+            push(&tokens, KeywordToken{.IMPORT, start_line, start_offset});
+
+        case "as":
+            push(&tokens, KeywordToken{.AS, start_line, start_offset});
+
+        case "lib":
+            push(&tokens, KeywordToken{.LIB, start_line, start_offset});
+
+        case "when":
+            push(&tokens, KeywordToken{.WHEN, start_line, start_offset});
+
+        case "cast":
+            push(&tokens, KeywordToken{.CAST, start_line, start_offset});
+
+        case "defer":
+            push(&tokens, KeywordToken{.DEFER, start_line, start_offset});
+
+        case "uint":
+            push(&tokens, KeywordToken{.UINT, start_line, start_offset});
+
+        case "u8":
+            push(&tokens, KeywordToken{.U8, start_line, start_offset});
+
+        case "u16":
+            push(&tokens, KeywordToken{.U16, start_line, start_offset});
+
+        case "u32":
+            push(&tokens, KeywordToken{.U32, start_line, start_offset});
+
+        case "u64":
+            push(&tokens, KeywordToken{.U64, start_line, start_offset});
+
+        case "u128":
+            push(&tokens, KeywordToken{.U128, start_line, start_offset});
+
+        case "int":
+            push(&tokens, KeywordToken{.INT, start_line, start_offset});
+
+        case "i8":
+            push(&tokens, KeywordToken{.I8, start_line, start_offset});
+
+        case "i16":
+            push(&tokens, KeywordToken{.I16, start_line, start_offset});
+
+        case "i32":
+            push(&tokens, KeywordToken{.I32, start_line, start_offset});
+
+        case "i64":
+            push(&tokens, KeywordToken{.I64, start_line, start_offset});
+
+        case "i128":
+            push(&tokens, KeywordToken{.I128, start_line, start_offset});
+
+        case "f32":
+            push(&tokens, KeywordToken{.F32, start_line, start_offset});
+
+        case "f64":
+            push(&tokens, KeywordToken{.F64, start_line, start_offset});
+
+        case "char":
+            push(&tokens, KeywordToken{.CHAR, start_line, start_offset});
+
+        case "str":
+            push(&tokens, KeywordToken{.STR, start_line, start_offset});
+
+        case "cstr":
+            push(&tokens, KeywordToken{.CSTR, start_line, start_offset});
+
+        case "type":
+            push(&tokens, KeywordToken{.TYPE, start_line, start_offset});
+
+        case "typeid":
+            push(&tokens, KeywordToken{.TYPEID, start_line, start_offset});
+
+        case "ctx":
+            push(&tokens, KeywordToken{.CTX, start_line, start_offset});
+    }
+}
+
 // Consumes a string and turns it into a token
 consume_string :: inline proc() {
+    str_has_escape := false;
+
     for len(input) > 0 {
-        char, n := utf8.decode_rune(input);
-        input = input[n:];
+        escape := false;
+
+        char  = input[0];
+        input = input[1:];
 
         update_offset(char);
 
         if (char == R_BACKSLASH) {
-            char, n = utf8.decode_rune(input);
-            input = input[n:];
-
-            update_offset(char);
-            consume_escape(char);
+            str_has_escape = true;
+            escape = true;
         }
 
-        else if (char == R_QUOTE) {
-            push(&tokens, StringToken{start_line, start_offset, strings.to_string(temp_token)});
+        else if (char == R_QUOTE && !escape) {
+            push(&tokens, StringToken{.STRING, start_line, start_offset, str_has_escape, strings.to_string(temp_token)});
             strings.reset_builder(temp_token);
             return;
         }
@@ -135,142 +396,29 @@ consume_string :: inline proc() {
     warning(.T_UNEXPECTED_EOF);
 }
 
-/*
- * Octals and hexadecimals
- */
-
-// Consumes an octal value (\onnn)
-consume_octal :: inline proc() {
-    strings.write_string(temp_token, "\\0o");
-
-    start: u8 = 0;
-
+consume_named :: proc() {
     for len(input) > 0 {
-        char, n := utf8.decode_rune(input);
-        input = input[n:];
+        char  = input[0];
 
-        update_offset(char);
-
-        ok := check_for_closer(char);
-
-        if (ok) {
-            #partial switch char {
-                case '0'..'9', 'a'..'f', 'A'..'F':
-                    // FOR_C: Specifically for C transpilation
-                    strings.write_rune(temp_token, char);
-
-                case:
-                    warning(.T_INVALID_OCTAL_VALUE);
-            }
-        }
-
-        start += 1;
-    }
-
-    if (start < 3) {
-        warning(.T_OCTAL_TOO_SMALL);
-        return;
-    }
-
-    else if (start > 3) {
-        warning(.T_OCTAL_TOO_LARGE);
-        return;
-    }
-
-    else {
-        push(&tokens, ConstToken{start_line, start_offset, strings.to_string(temp_token), .OCTAL});
-    }
-
-    warning(.T_UNEXPECTED_EOF);
-}
-
-// Consumes an 8bit, 16bit, or 32bit unsigned hex (\xnn, \xnnnn, \xnnnnnnnn)
-consume_hex :: inline proc() {
-
-    // FOR_C: Specifically for C transpilation
-    strings.write_string(temp_token, "\\0x");
-
-    bit_count: u8 = 0;
-
-    for len(input) > 0 {
-        char, n := utf.decode_rune(input);
-        input = input[n:];
-
-        update_offset(char);
-
-        ok := check_for_closer(char);
-
-        if (ok) {
-            switch char {
-                case '0'..'9', 'a'..'f', 'A'..'F':
-                    // FOR_C: Specifically for C transpilation
-                    strings.write_rune(temp_token, char);
-
-                case:
-                    warning(.T_INVALID_OCTAL_VALUE);
-            }
-        }
-    }
-
-    warning(.T_UNEXPECTED_EOF);
-}
-
-// Consumes an escape sequence (control or octal / hex). Preceded by a `\`
-consume_escape :: inline proc(char: rune) {
-    switch char {
-        case E_ALERT, E_BACKSPACE, E_ESCAPE, E_BREAK, E_NEWLINE, E_CARRIAGE,
-             E_TAB, E_V_TAB, R_BACKSLASH, R_APOST, R_QUOTE:
-            
-            // FOR_C: Specifically for C transpilation
-            strings.write_rune(temp_token, R_BACKSLASH);
-            strings.write_rune(temp_token, char);
-
-        case E_OCTAL:
-            consume_octal();
-
-        case E_HEX:
-            consume_hex();
-
-        case:
-            warning(.T_INVALID_ESCAPE);
+        if (check_for_special(char) || check_for_closer(char)) {
+            push(&tokens, StringToken{.NAMED, start_line, start_offset, strings.to_string(temp_token)});
+            strings.reset_builder(temp_token);
             return;
-    }
-
-    warning(.T_UNEXPECTED_EOF);
-}
-
-// Consumes an apostrophe. Could be either a member or a char
-consume_apostrophe :: proc() {
-    if (rune_at_pos(&input, 2) == '\'') {
-        push(&tokens, CharToken{start_line, start_offset, rune_at_pos(&input, 1)});
-        strings.reset_builder(temp_token);
-        
-        input = input[3:];
-    }
-    
-    else {
-        for len(input) > 0 {
-            char, n := utf.decode_rune(input);
-            input = input[n:];
-            
-            ok := check_for_closer(char);
-            
-            if (ok) {
-                strings.write_rune(char);
-            }
-            
-            else {
-                push(&tokens, MemberToken{strings.to_string(temp_token)});
-                strings.reset_builder(temp_token);
-
-                input = input[3:];
-            }
         }
+
+        input = input[1:];
+        update_offset(char);
+
+        if (check_for_keyword()) {
+
+        }
+
+        strings.write_rune(temp_token, char);
     }
 }
 
 // TODO: Finish the tokenizer
-tokenize :: proc(file: u32, input: []byte]) {
+tokenize :: proc(file: u32, input: []rune]) {
     tokens = Stack(Token){
         make([dynamic]Token, 100)
     };
@@ -286,8 +434,8 @@ tokenize :: proc(file: u32, input: []byte]) {
 
     // Thanks Tetralux for teaching me this way to iterate :)
     for len(input) > 0 {
-        char, n := utf8.decode_rune(input);
-        input = input[n:];
+        char  = input[0];
+        input = input[1:];
 
         update_offset(char);
 
@@ -295,14 +443,8 @@ tokenize :: proc(file: u32, input: []byte]) {
         start_offset = offset;
 
         // In-string check
-        switch char {
-            case R_QUOTE:
-                consume_string(&input, temp_token, i);
-                continue;
-
-            case R_APOST:
-                consume_apostrophe(&input, temp_token);
-                continue;
+        if (check_for_special()) {
+            consume_special(char);
         }
     }
 }

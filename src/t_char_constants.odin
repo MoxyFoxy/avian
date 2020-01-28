@@ -22,18 +22,18 @@ R_MUL :: '*';
 R_DIV :: '/';
 R_MOD :: '%';
 
-E_ALERT     :: 'a'; // Alert
-E_BACKSPACE :: 'b'; // Backspace
-E_ESCAPE    :: 'e'; // Escape
-E_BREAK     :: 'f'; // Page break
-E_NEWLINE   :: 'n'; // Newline
-E_CARRIAGE  :: 'r'; // Carriage return
-E_TAB       :: 't'; // Horizontal tab
-E_V_TAB     :: 'v'; // Vertical tab
-E_OCTAL     :: 'o'; // Octal value
-E_HEX       :: 'x'; // Unsigned 8, 16, or 32bit hex value
-E_UNI       :: 'u'; // 16bit unicode
-E_BIG_UNI   :: 'U'; // 32bit unicode
+R_ALERT     :: 'a'; // Alert
+R_BACKSPACE :: 'b'; // Backspace
+R_ESCAPE    :: 'e'; // Escape
+R_BREAK     :: 'f'; // Page break
+R_NEWLINE   :: 'n'; // Newline
+R_CARRIAGE  :: 'r'; // Carriage return
+R_TAB       :: 't'; // Horizontal tab
+R_V_TAB     :: 'v'; // Vertical tab
+R_OCTAL     :: 'o'; // Octal value
+R_HEX       :: 'x'; // Unsigned 8, 16, or 32bit hex value
+R_UNI       :: 'u'; // 16bit unicode
+R_BIG_UNI   :: 'U'; // 32bit unicode
 
 R_DECORATOR :: '@';
 R_BACKSLASH :: '\\';

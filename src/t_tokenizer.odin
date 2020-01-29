@@ -55,16 +55,32 @@ SpecialToken :: struct {
 
 MalformedToken :: SpecialToken;
 
-// Globals
+// File-scoped globals
+@(private="file")
 tokens: [dynamic]Token;
+
+@(private="file")
 input: []rune;
+
+@(private="file")
 temp_token: strings.Builder;
+
+@(private="file")
 file: u32;
+
+@(private="file")
 line: u32;
+
+@(private="file")
 offset: u32;
+
+@(private="file")
 start_line: u32;
+
+@(private="file")
 start_offset: u32;
 
+@(private="file")
 warning_queue: [dynamic]Warning;
 
 // Checks for non-alphabetic characters. This is temporary until full unicode support
@@ -236,7 +252,7 @@ consume_string :: inline proc() {
         strings.write_rune(&temp_token, char);
     }
 
-    warning(.T_UNEXPECTED_EOF);
+    warning(warning_queue, .T_UNEXPECTED_EOF, file, line, offset);
 }
 
 // Consumes a name

@@ -1,0 +1,49 @@
+Adder :: bvr ('value: ?T/int) {
+    add :: trait (other: T) {
+        'value += other;
+    }
+}
+
+Subtractor :: bvr ('value: ?T/int) {
+    sub :: trait (other: T) {
+        'value -= other;
+    }
+}
+
+Multiplier :: bvr ('value: ?T/int) {
+    mul :: trait (other: T) {
+        'value *= other;
+    }
+}
+
+Divider :: bvr ('value: ?T/int) {
+    div :: trait (other: T) {
+        'value /= other;
+    }
+}
+
+Modulator :: bvr ('value: ?T/int) {
+    mod :: trait (other: T) {
+        'value %= other;
+    }
+}
+
+Calculator :: character ('value: int) {
+    Adder('value),
+    Subtractor('value),
+    Multiplier('value),
+    Divider('value),
+    Modulator('value),
+}
+
+Foo :: obj {
+    a: int,
+}
+
+main :: proc () {
+    foo := Foo[Calculator('a)]{10};
+    foo->add(10); // 20
+    foo->sub(10); // 10
+    foo->div(2);  // 5
+    foo->mod(5);  // 0
+}

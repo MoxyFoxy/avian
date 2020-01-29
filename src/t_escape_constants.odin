@@ -1,3 +1,5 @@
+package avian
+
 E_ALERT     :: 0x07; // Alert
 E_BACKSPACE :: 0x08; // Backspace
 E_ESCAPE    :: 0x1B; // Escape

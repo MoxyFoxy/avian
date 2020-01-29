@@ -1,21 +1,21 @@
-Calculator :: actor (T: type) {
-    add :: act(x, y: T) -> T {
+Calculator :: bvr (T: type) {
+    add :: trait (x, y: T) -> T {
         return x + y;
     }
 
-    sub :: act(x, y: T) -> T {
+    sub :: trait (x, y: T) -> T {
         return x - y;
     }
 
-    mul :: act(x, y: T) -> T {
+    mul :: trait (x, y: T) -> T {
         return x * y;
     }
 
-    div :: act(x, y: T) -> T {
+    div :: trait (x, y: T) -> T {
         return x / y;
     }
 
-    mod :: act(x, y: T) -> T {
+    mod :: trait (x, y: T) -> T {
         return x % y;
     }
 }

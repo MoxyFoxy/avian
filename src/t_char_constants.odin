@@ -26,7 +26,7 @@ R_ALERT     :: 'a'; // Alert
 R_BACKSPACE :: 'b'; // Backspace
 R_ESCAPE    :: 'e'; // Escape
 R_BREAK     :: 'f'; // Page break
-R_NEWLINE   :: 'n'; // Newline
+//R_NEWLINE   :: 'n'; // Newline
 R_CARRIAGE  :: 'r'; // Carriage return
 R_TAB       :: 't'; // Horizontal tab
 R_V_TAB     :: 'v'; // Vertical tab

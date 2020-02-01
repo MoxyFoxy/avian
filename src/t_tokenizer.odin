@@ -298,7 +298,7 @@ consume_number :: inline proc() {
 // Takes in a file number and an array of runes to create a dynamic array of tokens and warnings.
 // You can create an array of runes from a string by calling `strings.string_to_runes`
 tokenize :: proc(file: u32, _input: []rune) -> ([dynamic]Token, [dynamic]Warning) {
-    
+
     // This is done this way to make sure not to cause shadowing
     input = _input;
 

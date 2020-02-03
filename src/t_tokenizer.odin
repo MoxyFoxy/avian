@@ -83,6 +83,16 @@ start_offset: u32;
 @(private="file")
 warning_queue: [dynamic]Warning;
 
+peek :: inline proc() -> rune {
+    return input[0];
+}
+
+eat :: inline proc() -> rune {
+    char := input[0];
+    input = input[1:];
+    return char;
+}
+
 // Checks for non-alphabetic characters. This is temporary until full unicode support
 check_for_closer :: inline proc(char: rune) -> bool {
     switch char {
@@ -224,15 +234,15 @@ consume_special :: inline proc(char: rune) {
 consume_string :: inline proc() {
     str_has_escape := false;
 
-    input = input[1:];
+    // Get rid of the first `"`
+    eat();
 
     for len(input) > 0 {
 
         // This was intentionally put here as it'll reset every loop
         escape := false;
 
-        char := input[0];
-        input = input[1:];
+        char := eat();
 
         update_offset(char);
 
@@ -258,7 +268,7 @@ consume_string :: inline proc() {
 // Consumes a name
 consume_named :: inline proc() {
     for len(input) > 0 {
-        char := input[0];
+        char := peek();
 
         if (check_for_special(char) || check_for_closer(char)) {
             append(&tokens, NamedToken{.NAMED, start_line, start_offset, strings.clone(strings.to_string(temp_token))});
@@ -268,7 +278,7 @@ consume_named :: inline proc() {
 
         // Having the input mutate after a possible return was done intentionally.
         // Allows the tokenizer to properly lex the special/closing token
-        input = input[1:];
+        eat();
         update_offset(char);
 
         strings.write_rune(&temp_token, char);
@@ -278,7 +288,7 @@ consume_named :: inline proc() {
 // Consumes a number. Note that this DOES consider all alphanumeric characters
 consume_number :: inline proc() {
     for len(input) > 0 {
-        char := input[0];
+        char := peek();
 
         if (check_for_special(char) || check_for_closer(char)) {
             append(&tokens, NumberToken{.NUMBER, start_line, start_offset, strings.clone(strings.to_string(temp_token))});
@@ -288,7 +298,7 @@ consume_number :: inline proc() {
 
         // Having the input mutate after a possible return was done intentionally.
         // Allows the tokenizer to properly lex the special/closing token
-        input = input[1:];
+        eat();
         update_offset(char);
 
         strings.write_rune(&temp_token, char);
@@ -314,7 +324,7 @@ tokenize :: proc(file: u32, _input: []rune) -> ([dynamic]Token, [dynamic]Warning
 
     // Thanks Tetralux for teaching me this way to iterate :)
     for len(input) > 0 {
-        char := input[0];
+        char := peek();
 
         update_offset(char);
 
@@ -340,7 +350,7 @@ tokenize :: proc(file: u32, _input: []rune) -> ([dynamic]Token, [dynamic]Warning
 
         // Edge cases where it could reach the end from a previous consumer
         if (len(input) > 0) {
-            input = input[1:];
+            eat();
         }
     }
 

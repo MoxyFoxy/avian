@@ -141,7 +141,7 @@ consume_special :: inline proc(char: rune) {
 
         case '`':
             append(&tokens, SpecialToken{.BACKTICK, start_line, start_offset});
-    
+
         case '!':
             append(&tokens, SpecialToken{.NOT, start_line, start_offset});
 
@@ -225,7 +225,7 @@ consume_special :: inline proc(char: rune) {
 
         case '?':
             append(&tokens, SpecialToken{.QUESTION, start_line, start_offset});
-    
+
         // This should never happen. If it does, the code is seriously messed up lol
         case:
             append(&tokens, MalformedToken{.MALFORMED, start_line, start_offset});

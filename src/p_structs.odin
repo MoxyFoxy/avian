@@ -20,7 +20,7 @@ Procedure :: struct {
 
 Scope :: struct {
     scope_type  : ScopeType,
-    expressions : [dynamic] Expression,
+    expressions : [dynamic]^Expression,
     child_scopes: [dynamic]^Scope,
 }
 

@@ -83,10 +83,12 @@ start_offset: u32;
 @(private="file")
 warning_queue: [dynamic]Warning;
 
+@(private="file")
 peek :: inline proc() -> rune {
     return input[0];
 }
 
+@(private="file")
 eat :: inline proc() -> rune {
     char := input[0];
     input = input[1:];

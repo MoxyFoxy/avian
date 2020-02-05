@@ -14,7 +14,7 @@ ast: AST;
 file: u32;
 
 @(private="file")
-peek :: inline proc(int amount = 0) -> Token {
+peek :: inline proc(amount: int = 0) -> Token {
     assert(tokens[amount].kind != TokenKind.MALFORMED);
     return tokens[amount];
 }
@@ -28,7 +28,7 @@ eat :: inline proc() -> Token {
 }
 
 @(private="file")
-discard :: inline proc(int amount = 1) -> Token {
+discard :: inline proc(amount: int = 1) -> Token {
     tokens = tokens[amount:];
 }
 
@@ -144,7 +144,7 @@ consume_procedure :: inline proc() {
                     for {
                         token = peek();
 
-                        if (token.kind = TokenKind.RIGHT_PAREN) {
+                        if (token.kind == TokenKind.RIGHT_PAREN) {
                             discard();
                             break;
                         }
@@ -175,7 +175,7 @@ consume_procedure :: inline proc() {
                     for {
                         token = peek();
 
-                        if (token.kind = TokenKind.SCOPE_START) {
+                        if (token.kind == TokenKind.SCOPE_START) {
                             discard();
                             break;
                         }

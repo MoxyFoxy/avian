@@ -22,7 +22,7 @@ Calculator :: bvr (?T: type) {
 
 main :: proc() {
     c :: Calculator(int);
-    
+
     x := 10;
     y := 5;
 

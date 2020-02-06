@@ -84,8 +84,8 @@ start_offset: u32;
 warning_queue: [dynamic]Warning;
 
 @(private="file")
-peek :: inline proc() -> rune {
-    return input[0];
+peek :: inline proc(index: int = 0) -> rune {
+    return input[index];
 }
 
 @(private="file")
@@ -307,6 +307,16 @@ consume_number :: inline proc() {
     }
 }
 
+consume_comment :: inline proc() {
+    for len(input) > 0 {
+        char := eat();
+
+        if (peek(1) == '\n') {
+            return;
+        }
+    }
+}
+
 // Takes in a file number and an array of runes to create a dynamic array of tokens and warnings.
 // You can create an array of runes from a string by calling `strings.string_to_runes`
 tokenize :: proc(file: u32, _input: []rune) -> ([dynamic]Token, [dynamic]Warning) {
@@ -332,6 +342,10 @@ tokenize :: proc(file: u32, _input: []rune) -> ([dynamic]Token, [dynamic]Warning
 
         start_line   = line;
         start_offset = offset;
+
+        if (char == R_SLASH && peek(1) == R_SLASH) {
+            consume_comment();
+        }
 
         // This has to come before check_for_special
         if (char == R_QUOTE) {

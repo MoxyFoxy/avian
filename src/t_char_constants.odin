@@ -37,4 +37,5 @@ R_BIG_UNI   :: 'U'; // 32bit unicode
 
 R_DECORATOR :: '@';
 R_BACKSLASH :: '\\';
-R_EOL :: ';';
+R_SLASH :: R_DIV;
+R_EOL   :: ';';

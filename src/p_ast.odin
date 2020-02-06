@@ -53,13 +53,19 @@ check_for_keyword :: proc(name: string) -> bool {
     }
 }
 
+// Should always be `NAMED`, `COLON`, `TYPE` or `name: type`
 consume_parameter :: inline proc() -> Parameter {
     token = eat();
     name: string;
 
+    // Parameter name
     if (token.kind != TokenKind.NAMED) {
         warning(&warning_queue, .P_PARAM_MISSING_NAME, file, token.line, token.offset);
         name = "--MALFORMED";
+    }
+
+    else {
+        name = token.name;
     }
 
     token = eat();
@@ -73,6 +79,7 @@ consume_parameter :: inline proc() -> Parameter {
     token = eat();
     type: Type;
 
+    // Type
     if (token.kind != TokenKind.NAMED) {
         warning(&warning_queue, .P_UNEXPECTED_TYPE_NAME, file, token.line, token.offset);
         type = RawType{"--MALFORMED"};
@@ -121,7 +128,7 @@ consume_procedure :: inline proc() {
                                     make([dynamic]^Expression, 0, 100), // Expressions
                                     make([dynamic]^Scope,      0, 10),  // Child Scopes
                                 }
-                     };
+        };
 
         token = eat();
 
@@ -132,6 +139,7 @@ consume_procedure :: inline proc() {
         else {
             token = eat();
 
+            // Consuming parameters
             for token.kind != TokenKind.RIGHT_PAREN {
                 append(&procedure.parameters, consume_parameter());
 
@@ -144,11 +152,13 @@ consume_procedure :: inline proc() {
                     for {
                         token = peek();
 
+                        // If it's closed by a right parenthesis, then close
                         if (token.kind == TokenKind.RIGHT_PAREN) {
                             discard();
                             break;
                         }
 
+                        // If we reach the end
                         if (len(tokens) == 0) {
                             warning(&warning_queue, .P_UNEXPECTED_EOF, file, token.line, token.offset);
                             return procedure;
@@ -162,6 +172,7 @@ consume_procedure :: inline proc() {
             }
         }
 
+        // Parse return values
         // => is optional
         if (peek().kind == TokenKind.EQUALS && peek(1).kind == TokenKind.GREATER) {
             append(&procedure.return_types, consume_return());
@@ -169,27 +180,30 @@ consume_procedure :: inline proc() {
             token = eat();
 
             // If comma is not found, consume malformed return types until closed by a scope
-                if (token.kind != TokenKind.COMMA) {
-                    warning(&warning_queue, .P_RETURN_UNEXPECTED_TOKEN, file, token.line, token.offset);
+            if (token.kind != TokenKind.COMMA) {
+                warning(&warning_queue, .P_RETURN_UNEXPECTED_TOKEN, file, token.line, token.offset);
 
-                    for {
-                        token = peek();
+                for {
+                    token = peek();
 
-                        if (token.kind == TokenKind.SCOPE_START) {
-                            discard();
-                            break;
-                        }
-
-                        if (len(tokens) == 0) {
-                            warning(&warning_queue, .P_UNEXPECTED_EOF, file, token.line, token.offset);
-                            return procedure;
-                        }
-
-                        append(&procedure.return_types, RawType{"--MALFORMED"});
+                    // SCOPE_START is `{`
+                    if (token.kind == TokenKind.SCOPE_START) {
+                        discard();
+                        break;
                     }
 
-                    break;
+                    // If we reach the end before a scope starting
+                    if (len(tokens) == 0) {
+                        warning(&warning_queue, .P_UNEXPECTED_EOF, file, token.line, token.offset);
+                        return procedure;
+                    }
+
+                    // Means we neither got a scope nor a file end
+                    append(&procedure.return_types, RawType{"--MALFORMED"});
                 }
+
+                break;
+            }
         }
 
         else if (peek.kind == TokenKind.SCOPE_START) {
@@ -232,6 +246,7 @@ build_ast :: proc(package_name: string, file: u32, _tokens: [dynamic]Token, _war
                //make(map[string] Object,   0, 100), // Commented out until it's implemented
                make(map[string]^Library,  0, 0),     // 0'd out until it's fully implemented
 
+               // Main procedure
                Procedure {"",
                           make(map[string]Parameter, 0, 100),
                           make([dynamic]Type,        0, 100)
@@ -240,8 +255,11 @@ build_ast :: proc(package_name: string, file: u32, _tokens: [dynamic]Token, _war
 
     for len(tokens) > 0 {
         token := eat();
+
+        // This can be used for post-parse precedence checking
         has_ops := false;
 
+        // If `::` (constant value)
         if (peek().kind == TokenKind.COLON && peek(1).kind == TokenKind.COLON) {
             discard(2);
 
@@ -249,6 +267,7 @@ build_ast :: proc(package_name: string, file: u32, _tokens: [dynamic]Token, _war
 
             temp_token := peek(2);
 
+            // What the right side is. Can be either a NAMED token or constant value
             if (temp_token.kind == TokenKind.NAMED) {
                 switch temp_token.name {
                     case "proc":

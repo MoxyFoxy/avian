@@ -41,7 +41,7 @@ Foo :: obj {
 }
 
 main :: proc () {
-    foo := Foo[Calculator('a)]{10};
+    foo := Foo{10}[Calculator('a)];
     foo->add(10); // 20
     foo->sub(10); // 10
     foo->div(2);  // 5

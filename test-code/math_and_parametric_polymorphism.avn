@@ -1,21 +1,21 @@
-Calculator :: bvr (T: type) {
-    add :: trait (x, y: T) -> T {
+Calculator :: bvr (?T: type) {
+    add :: proc (x, y: T) -> T {
         return x + y;
     }
 
-    sub :: trait (x, y: T) -> T {
+    sub :: proc (x, y: T) -> T {
         return x - y;
     }
 
-    mul :: trait (x, y: T) -> T {
+    mul :: proc (x, y: T) -> T {
         return x * y;
     }
 
-    div :: trait (x, y: T) -> T {
+    div :: proc (x, y: T) -> T {
         return x / y;
     }
 
-    mod :: trait (x, y: T) -> T {
+    mod :: proc (x, y: T) -> T {
         return x % y;
     }
 }
@@ -26,9 +26,9 @@ main :: proc() {
     x := 10;
     y := 5;
 
-    add := c.add(x, y);
-    sub := c.sub(x, y);
-    mul := c.mul(x, y);
-    div := c.div(x, y);
-    mod := c.mod(x, y);
+    add := c.add(x, y); // 15
+    sub := c.sub(x, y); // 10
+    mul := c.mul(x, y); // 50
+    div := c.div(x, y); // 10
+    mod := c.mod(x, y); // 0
 }

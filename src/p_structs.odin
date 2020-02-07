@@ -39,7 +39,7 @@ Parameter :: struct {
 }
 
 Type :: union {
-    Parapoly,
+    ParaPoly,
     RawType,
 }
 
@@ -58,13 +58,13 @@ Expression :: union {
     OP,
     Not,
     Declaration,
-    Initialization,
-    Assignment,
+    //Initialization, // TODO: Create initialization
+    //Assignment,     // TODO: Create assignment
 }
 
 OP :: struct {
-    left : Expression,
-    right: Expression,
+    left : ^Expression,
+    right: ^Expression,
 }
 
 Add :: OP;
@@ -77,7 +77,7 @@ And :: OP;
 Or  :: OP;
 
 Not :: struct {
-    right: Expression,
+    right: ^Expression,
 }
 
 Declaration :: struct {

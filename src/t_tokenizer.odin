@@ -3,55 +3,38 @@ package avian
 import "core:unicode/utf8"
 import "core:strings"
 
-Token :: union {
-    NamedToken,
-    NumberToken,
-    StringToken,
-    OPToken,
-    SpecialToken,
-}
+// Thanks TillerErikson and Tetralux for teaching me about in-struct unions!
+Token :: struct {
+    kind: TokenKind,
 
-NamedToken :: struct {
-    kind  : TokenKind,
-    
     line  : u32,
     offset: u32,
 
+    variant: union {
+        NamedToken,
+        NumberToken,
+        StringToken,
+        OPToken,
+        SpecialToken,
+    },
+}
+
+NamedToken :: struct {
     name  : string,
 }
 
 NumberToken :: struct {
-    kind  : TokenKind,
-    
-    line  : u32,
-    offset: u32,
-
     value : string,
 }
 
 StringToken :: struct {
-    kind  : TokenKind,
-    
-    line  : u32,
-    offset: u32,
-
     escape: bool,
     value : string,
 }
 
-OPToken :: struct {
-    kind  : TokenKind,
-    
-    line  : u32,
-    offset: u32,
-}
+OPToken :: struct {}
 
-SpecialToken :: struct {
-    kind  : TokenKind,
-    
-    line  : u32,
-    offset: u32,
-}
+SpecialToken :: struct {}
 
 MalformedToken :: SpecialToken;
 
@@ -137,98 +120,98 @@ update_offset :: inline proc(char: rune) {
 consume_special :: inline proc(char: rune) {
     switch char {
         case '~':
-            append(&tokens, SpecialToken{.TILDE, start_line, start_offset});
+            append(&tokens, Token{.TILDE, start_line, start_offset, SpecialToken{}});
 
         case '`':
-            append(&tokens, SpecialToken{.BACKTICK, start_line, start_offset});
+            append(&tokens, Token{.BACKTICK, start_line, start_offset, SpecialToken{}});
 
         case '!':
-            append(&tokens, SpecialToken{.NOT, start_line, start_offset});
+            append(&tokens, Token{.NOT, start_line, start_offset, SpecialToken{}});
 
         case '@':
-            append(&tokens, SpecialToken{.AT, start_line, start_offset});
+            append(&tokens, Token{.AT, start_line, start_offset, SpecialToken{}});
 
         case '#':
-            append(&tokens, SpecialToken{.DECORATOR, start_line, start_offset});
+            append(&tokens, Token{.DECORATOR, start_line, start_offset, SpecialToken{}});
 
         case '$':
-            append(&tokens, SpecialToken{.DOLLAR, start_line, start_offset});
+            append(&tokens, Token{.DOLLAR, start_line, start_offset, SpecialToken{}});
 
         case '%':
-            append(&tokens, OPToken{.MOD, start_line, start_offset});
+            append(&tokens, Token{.MOD, start_line, start_offset, OPToken{}});
 
         case '^':
-            append(&tokens, SpecialToken{.POINTER, start_line, start_offset});
+            append(&tokens, Token{.POINTER, start_line, start_offset, SpecialToken{}});
 
         case '&':
-            append(&tokens, SpecialToken{.AMPERSAND, start_line, start_offset});
+            append(&tokens, Token{.AMPERSAND, start_line, start_offset, SpecialToken{}});
 
         case '*':
-            append(&tokens, SpecialToken{.MUL, start_line, start_offset});
+            append(&tokens, Token{.MUL, start_line, start_offset, SpecialToken{}});
 
         case '(':
-            append(&tokens, SpecialToken{.LEFT_PAREN, start_line, start_offset});
+            append(&tokens, Token{.LEFT_PAREN, start_line, start_offset, SpecialToken{}});
 
         case ')':
-            append(&tokens, SpecialToken{.RIGHT_PAREN, start_line, start_offset});
+            append(&tokens, Token{.RIGHT_PAREN, start_line, start_offset, SpecialToken{}});
 
         case '-':
-            append(&tokens, OPToken{.SUB, start_line, start_offset});
+            append(&tokens, Token{.SUB, start_line, start_offset, OPToken{}});
 
         case '=':
-            append(&tokens, OPToken{.EQUAL, start_line, start_offset});
+            append(&tokens, Token{.EQUAL, start_line, start_offset, OPToken{}});
 
         case '+':
-            append(&tokens, OPToken{.ADD, start_line, start_offset});
+            append(&tokens, Token{.ADD, start_line, start_offset, OPToken{}});
 
         case '[':
-            append(&tokens, SpecialToken{.LEFT_SQUARE, start_line, start_offset});
+            append(&tokens, Token{.LEFT_SQUARE, start_line, start_offset, SpecialToken{}});
 
         case ']':
-            append(&tokens, SpecialToken{.RIGHT_SQUARE, start_line, start_offset});
+            append(&tokens, Token{.RIGHT_SQUARE, start_line, start_offset, SpecialToken{}});
 
         case '{':
-            append(&tokens, SpecialToken{.SCOPE_START, start_line, start_offset});
+            append(&tokens, Token{.SCOPE_START, start_line, start_offset, SpecialToken{}});
 
         case '}':
-            append(&tokens, SpecialToken{.SCOPE_END, start_line, start_offset});
+            append(&tokens, Token{.SCOPE_END, start_line, start_offset, SpecialToken{}});
 
         case '\\':
-            append(&tokens, OPToken{.BACKSLASH, start_line, start_offset});
+            append(&tokens, Token{.BACKSLASH, start_line, start_offset, OPToken{}});
 
         case '|':
-            append(&tokens, OPToken{.BIT_OR, start_line, start_offset});
+            append(&tokens, Token{.BIT_OR, start_line, start_offset, OPToken{}});
 
         case ';':
-            append(&tokens, SpecialToken{.EOL, start_line, start_offset});
+            append(&tokens, Token{.EOL, start_line, start_offset, SpecialToken{}});
 
         case ':':
-            append(&tokens, SpecialToken{.COLON, start_line, start_offset});
+            append(&tokens, Token{.COLON, start_line, start_offset, SpecialToken{}});
 
         case '\'':
-            append(&tokens, SpecialToken{.APOST, start_line, start_offset});
+            append(&tokens, Token{.APOST, start_line, start_offset, SpecialToken{}});
 
         case ',':
-            append(&tokens, SpecialToken{.COMMA, start_line, start_offset});
+            append(&tokens, Token{.COMMA, start_line, start_offset, SpecialToken{}});
 
         case '<':
-            append(&tokens, SpecialToken{.LESSER, start_line, start_offset});
+            append(&tokens, Token{.LESSER, start_line, start_offset, SpecialToken{}});
 
         case '>':
-            append(&tokens, SpecialToken{.GREATER, start_line, start_offset});
+            append(&tokens, Token{.GREATER, start_line, start_offset, SpecialToken{}});
 
         case '.':
-            append(&tokens, SpecialToken{.DOT, start_line, start_offset});
+            append(&tokens, Token{.DOT, start_line, start_offset, SpecialToken{}});
 
         case '/':
-            append(&tokens, SpecialToken{.DIV, start_line, start_offset});
+            append(&tokens, Token{.DIV, start_line, start_offset, SpecialToken{}});
 
         case '?':
-            append(&tokens, SpecialToken{.QUESTION, start_line, start_offset});
+            append(&tokens, Token{.QUESTION, start_line, start_offset, SpecialToken{}});
 
         // This should never happen. If it does, the code is seriously messed up lol
         case:
-            append(&tokens, MalformedToken{.MALFORMED, start_line, start_offset});
+            append(&tokens, Token{.MALFORMED, start_line, start_offset, MalformedToken{}});
     }
 }
 
@@ -256,7 +239,7 @@ consume_string :: inline proc() {
         }
 
         else if (char == R_QUOTE && !escape) {
-            append(&tokens, StringToken{.STRING, start_line, start_offset, str_has_escape, strings.clone(strings.to_string(temp_token))});
+            append(&tokens, Token{.STRING, start_line, start_offset, StringToken{str_has_escape, strings.clone(strings.to_string(temp_token))}});
             strings.reset_builder(&temp_token);
             return;
         }
@@ -273,7 +256,7 @@ consume_named :: inline proc() {
         char := peek();
 
         if (check_for_special(char) || check_for_closer(char)) {
-            append(&tokens, NamedToken{.NAMED, start_line, start_offset, strings.clone(strings.to_string(temp_token))});
+            append(&tokens, Token{.NAMED, start_line, start_offset, NamedToken{strings.clone(strings.to_string(temp_token))}});
             strings.reset_builder(&temp_token);
             return;
         }
@@ -293,7 +276,7 @@ consume_number :: inline proc() {
         char := peek();
 
         if (check_for_special(char) || check_for_closer(char)) {
-            append(&tokens, NumberToken{.NUMBER, start_line, start_offset, strings.clone(strings.to_string(temp_token))});
+            append(&tokens, Token{.NUMBER, start_line, start_offset, NumberToken{strings.clone(strings.to_string(temp_token))}});
             strings.reset_builder(&temp_token);
             return;
         }

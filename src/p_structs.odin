@@ -45,9 +45,9 @@ Type :: union {
 
 ParaPoly :: struct {
     type_name: string,
-    of_type  : RawType, // The / operator on types (parapoly)
-    or_type  : RawType, // The | operator on types (parapoly)
-    not_type : RawType, // The ! operator on types (parapoly)
+    of_type  : RawType, // The `of` operator on types (parapoly)  Example: `?T of int` where `T` must be some kind of `int`
+    or_type  : RawType, // The `or` operator on types (parapoly)  Example: `?T of int or uint` where `T` could be either any kind of `int` or `uint`
+    not_type : RawType, // The `not` operator on types (parapoly) Example: `?T not int` where `T` could be anything except any kind of `int`
 }
 
 RawType :: struct {

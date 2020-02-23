@@ -2,8 +2,9 @@ package avian
 
 AST :: struct {
     name      : string,
-    //behaviors : map[string] Behavior, // Commented out until it's implemented
-    //objects   : map[string] Object,   // Commented out until it's implemented
+    behaviors : map[string] Behavior,
+    characters: map[string] Character,
+    objects   : map[string] Object,
     procedures: map[string] Procedure,
     libraries : map[string]^Library,
     main      : Procedure,
@@ -11,26 +12,11 @@ AST :: struct {
 
 Library :: AST;
 
-Procedure :: struct {
-    name        : string,
-    parameters  : map[string]Parameter,
-    return_types: [dynamic]RawType,
-    body        : Scope,
-}
-
-Scope :: struct {
-    scope_type  : ScopeType,
-    expressions : [dynamic]^Expression,
-    child_scopes: [dynamic]^Scope,
-}
-
-ScopeType :: enum {
-    PROCEDURE,
-    IF_BLOCK,
-    FOR,
-    WHILE,
-    DEFER,
-    USING,      
+Behavior :: struct {
+    name      : string,
+    members   : map[string]Parameter,
+    traits    : map[string]Trait,
+    procedures: map[string]Procedure,
 }
 
 Parameter :: struct {
@@ -39,27 +25,65 @@ Parameter :: struct {
 }
 
 Type :: union {
-    ParaPoly,
     RawType,
-}
-
-ParaPoly :: struct {
-    type_name: string,
-    of_type  : RawType, // The / operator on types (parapoly)
-    or_type  : RawType, // The | operator on types (parapoly)
-    not_type : RawType, // The ! operator on types (parapoly)
+    ParaPoly,
+    Polyed,
 }
 
 RawType :: struct {
     name: string,
 }
 
+ParaPoly :: struct {
+    name    : string,
+    of_type : [dynamic]NPPType,
+    and_type: [dynamic]NPPType,
+    or_type : [dynamic]NPPType
+}
+
+NPPType :: union {
+    RawType,
+    Polyed,
+}
+
+Polyed :: struct {
+    origin  : string,
+    parapoly: [dynamic]^NPPType,
+}
+
+Trait :: union {
+    BehaviorTrait,
+    SoloTrait,
+}
+
+BehaviorTrait :: distinct Procedure;
+
+Procedure :: struct {
+    name        : string,
+    parameters  : map[string]Parameter,
+    return_types: [dynamic]NPPType,
+    body        : Scope,
+}
+
+Scope :: struct {
+    scope_type:  ScopeType,
+    parent    : ^Scope,
+    exprs     :  [dynamic]^Expression
+}
+
+ScopeType :: enum {
+    PROCEDURE,
+    IF_BLOCK, ELSEIF_BLOCK, ELSE_BLOCK,
+    FOR, WHILE,
+    DEFER,
+    USING,
+}
+
 Expression :: union {
     OP,
     Not,
-    Declaration,
-    //Initialization, // TODO: Create initialization
-    //Assignment,     // TODO: Create assignment
+    VarCreation,
+    Assignment, ConstAssign,
 }
 
 OP :: struct {
@@ -67,20 +91,64 @@ OP :: struct {
     right: ^Expression,
 }
 
-Add :: OP;
-Sub :: OP;
-Mul :: OP;
-Div :: OP;
-Mod :: OP;
-
-And :: OP;
-Or  :: OP;
-
 Not :: struct {
-    right: ^Expression,
+    expr: ^Expression,
 }
 
-Declaration :: struct {
-    var_name: string,
-    type    : RawType,
+VarCreation :: struct {
+    name: string,
+    type: NPPType,
+
+    init: ^Expression // Nil if it's a declaration instead of an initialization
+}
+
+Assignment :: struct {
+    name :  string,
+    value: ^Expression,
+}
+
+ConstAssign :: struct {
+    name : string,
+    value: Constant,
+}
+
+Constant :: struct {
+    value: union {
+        string,
+        Type,
+    }
+}
+
+SoloTrait :: struct {
+    name        : string,
+    members     : map[string]MemberParam,
+    parameters  : map[string]Parameter,
+    return_types: [dynamic]NPPType,
+    body        : Scope,
+}
+
+MemberParam :: struct {
+    name: string,
+    type: NPPType,
+}
+
+Character :: struct {
+    name     : string,
+    members  : map[string]MemberParam,
+    behaviors: [dynamic]CharBehavior,
+}
+
+CharBehavior :: struct {
+    name   : string,
+    members: map[string]Member,
+}
+
+Member :: struct {
+    name: string,
+}
+
+Object :: struct {
+    name    : string,
+    parapoly: map[string]Parameter,
+    members : map[string]MemberParam,
 }

@@ -53,7 +53,7 @@ check_for_keyword :: proc(name: string) -> bool {
              "u32le", "u64le", "u128le", "f32le", "f64le", "intbe", "i8be",
              "i16be", "i32be", "i64be", "i128be", "uintbe", "u8be", "u16be",
              "u32be", "u64be", "u128be", "f32be", "f64be", "type",
-             "type_id", "ctx":
+             "type_id", "ctx", "of", "and", "or":
 
             return true;
 
@@ -62,26 +62,140 @@ check_for_keyword :: proc(name: string) -> bool {
     }
 }
 
+// Parses an NPPType value
+// TODO: Account for pointers and arrays
+parse_npptype :: proc() -> NPPType {
+    if (peek(1).kind == TokenKind.LEFT_PAREN) {
+        return cast(NPPType)parse_polyed();
+    }
 
+    else {
+        return cast(NPPType)parse_rawtype();
+    }
+}
 
-build_ast :: proc(package_name: string, file: u32, _tokens: []Token, _warning_queue: [dynamic]Warning) -> AST {
+// Parses a RawType value
+// TODO: Account for pointers and arrays
+parse_rawtype :: proc() -> RawType {
+    token := eat();
+
+    if (token.kind == TokenKind.NAMED) {
+        return RawType{token.variant.(NamedToken).name};
+    }
+
+    else {
+        warning(warning_queue, .P_UNEXPECTED_TOKEN_TYPE,
+                file, token.line, token.offset);
+    }
+
+    return RawType{"--MALFORMED"};
+}
+
+//// Potential bug-bringer. To be determined \\\\
+// Parses a Polyed type
+// TODO: Account for pointers and arrays
+parse_polyed :: proc() -> Polyed {
+    token := eat();
+
+    if (token.kind == TokenKind.NAMED) {
+        origin := token.variant.(NamedToken).name;
+        token = eat();
+
+        if (token.kind == TokenKind.LEFT_PAREN) {
+            token = eat();
+
+            npp_types := make([dynamic]^NPPType, 0, 5);
+
+            for token.kind == TokenKind.RIGHT_PAREN {
+                npp := parse_npptype();
+                append(&npp_types, &npp);
+
+                if (peek().kind == TokenKind.COMMA) {
+                    discard();
+                }
+            }
+
+            if (len(npp_types) <= 0) {
+                warning(warning_queue, .P_POLYED_MISSING_PARAPOLY,
+                        file, token.line, token.offset);
+            }
+            
+            return Polyed{origin, npp_types[:]};
+        }
+
+        else {
+            warning(warning_queue, .P_UNEXPECTED_TOKEN_TYPE,
+                    file, token.line, token.offset);
+        }
+    }
+
+    else {
+        warning(warning_queue, .P_UNEXPECTED_TOKEN_TYPE,
+                file, token.line, token.offset);
+    }
+
+    return Polyed{"--MALFORMED", nil};
+}
+
+// TODO: Account for pointers and arrays
+parse_parapoly :: proc() -> ParaPoly {
+    token := eat();
+
+    if (token.kind == TokenKind.QUESTION) {
+        token = peek();
+
+        if (token.kind == TokenKind.NAMED) {
+            name := token.variant.(NamedToken).name;
+
+            of_type  := make([dynamic]NPPType, 0, 5);
+            and_type := make([dynamic]NPPType, 0, 5);
+            or_type  := make([dynamic]NPPType, 0, 5);
+
+            discard();
+            token = peek();
+
+            for token.kind == TokenKind.NAMED {
+                switch token.variant.(NamedToken).name {
+                    case "of" : append(&of_type,  parse_npptype());
+                    case "and": append(&and_type, parse_npptype());
+                    case "or" : append(&or_type,  parse_npptype());
+
+                    case:
+                        warning(warning_queue, .P_PARAPOLY_UNEXPECTED_TOKEN,
+                                file, token.line, token.offset);
+                        discard();
+                }
+            }
+
+            return ParaPoly{name, of_type[:], and_type[:], or_type[:]};
+        }
+
+        else {
+            warning(warning_queue, .P_UNEXPECTED_TOKEN_TYPE,
+                    file, token.line, token.offset);
+        }
+    }
+
+    else {
+        warning(warning_queue, .P_PARAPOLY_MISSING_QUESTION,
+                file, token.line, token.offset);
+    }
+
+    return ParaPoly{"--MALFORMED", nil, nil, nil};
+}
+
+build_ast :: proc(package_name: string, _file: u32, _tokens: []Token, _warning_queue: [dynamic]Warning) -> AST {
     tokens = _tokens;
     warning_queue = _warning_queue;
+    file = _file;
 
-    ast = AST {package_name,
-
-               //make(map[string] Behavior, 0, 100),  // Commented out until it's implemented
-               //make(map[string] Object,   0, 100), // Commented out until it's implemented
-               make(map[string] Procedure),     // 0'd out until it's fully implemented
-               make(map[string]^Library),      // 0'd out until it's fully implemented
-
-               // Main procedure
-               Procedure {"",
-                          make(map[string]Parameter),
-                          make([dynamic]RawType,        0, 100),
-                          Scope{},
-               }
-    };
+    ast_name  := package_name;
+    ast_bvrs  := make([dynamic]Behavior,  0, 100);
+    ast_chars := make([dynamic]Character, 0, 100);
+    ast_objs  := make([dynamic]Object,    0, 100);
+    ast_procs := make([dynamic]Procedure, 0, 100);
+    ast_libs  := make([dynamic]^Library,  0, 100);
+    ast_main: Procedure;
 
     for len(tokens) > 0 {
         token := eat();
@@ -106,6 +220,6 @@ build_ast :: proc(package_name: string, file: u32, _tokens: []Token, _warning_qu
             }
         }
     }
-
+    ast: AST = nil;
     return ast;
 }

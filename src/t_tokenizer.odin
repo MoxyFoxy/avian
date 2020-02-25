@@ -16,6 +16,7 @@ Token :: struct {
         StringToken,
         OPToken,
         SpecialToken,
+        MalformedToken,
     },
 }
 
@@ -36,7 +37,7 @@ OPToken :: struct {}
 
 SpecialToken :: struct {}
 
-MalformedToken :: SpecialToken;
+MalformedToken :: distinct SpecialToken;
 
 // File-scoped globals
 @(private="file")

@@ -2,11 +2,11 @@ package avian
 
 AST :: struct {
     name      : string,
-    behaviors : map[string] Behavior,
-    characters: map[string] Character,
-    objects   : map[string] Object,
-    procedures: map[string] Procedure,
-    libraries : map[string]^Library,
+    behaviors : [] Behavior,
+    characters: [] Character,
+    objects   : [] Object,
+    procedures: [] Procedure,
+    libraries : []^Library,
     main      : Procedure,
 }
 
@@ -14,9 +14,9 @@ Library :: AST;
 
 Behavior :: struct {
     name      : string,
-    members   : map[string]Parameter,
-    traits    : map[string]Trait,
-    procedures: map[string]Procedure,
+    members   : []Parameter,
+    traits    : []Trait,
+    procedures: []Procedure,
 }
 
 Parameter :: struct {
@@ -36,9 +36,9 @@ RawType :: struct {
 
 ParaPoly :: struct {
     name    : string,
-    of_type : [dynamic]NPPType,
-    and_type: [dynamic]NPPType,
-    or_type : [dynamic]NPPType
+    of_type : []NPPType,
+    and_type: []NPPType,
+    or_type : []NPPType
 }
 
 NPPType :: union {
@@ -48,7 +48,7 @@ NPPType :: union {
 
 Polyed :: struct {
     origin  : string,
-    parapoly: [dynamic]^NPPType,
+    parapoly: []^NPPType,
 }
 
 Trait :: union {
@@ -60,15 +60,15 @@ BehaviorTrait :: distinct Procedure;
 
 Procedure :: struct {
     name        : string,
-    parameters  : map[string]Parameter,
-    return_types: [dynamic]NPPType,
+    parameters  : []Parameter,
+    return_types: []NPPType,
     body        : Scope,
 }
 
 Scope :: struct {
     scope_type:  ScopeType,
     parent    : ^Scope,
-    exprs     :  [dynamic]^Expression
+    exprs     :  []^Expression
 }
 
 ScopeType :: enum {
@@ -121,9 +121,9 @@ Constant :: struct {
 
 SoloTrait :: struct {
     name        : string,
-    members     : map[string]MemberParam,
-    parameters  : map[string]Parameter,
-    return_types: [dynamic]NPPType,
+    members     : []MemberParam,
+    parameters  : []Parameter,
+    return_types: []NPPType,
     body        : Scope,
 }
 
@@ -134,13 +134,13 @@ MemberParam :: struct {
 
 Character :: struct {
     name     : string,
-    members  : map[string]MemberParam,
-    behaviors: [dynamic]CharBehavior,
+    members  : []MemberParam,
+    behaviors: []CharBehavior,
 }
 
 CharBehavior :: struct {
     name   : string,
-    members: map[string]Member,
+    members: []Member,
 }
 
 Member :: struct {
@@ -149,6 +149,6 @@ Member :: struct {
 
 Object :: struct {
     name    : string,
-    parapoly: map[string]Parameter,
-    members : map[string]MemberParam,
+    parapoly: []Parameter,
+    members : []MemberParam,
 }

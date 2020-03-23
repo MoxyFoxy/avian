@@ -1,8 +1,14 @@
 package avian
 
+import "core:strings"
+import "core:strconv"
+
 // Globals
 @(private="file")
-tokens: [dynamic]Token;
+tokens: []Token;
+
+@(private="file")
+token: Token;
 
 @(private="file")
 warning_queue: [dynamic]Warning;
@@ -11,10 +17,13 @@ warning_queue: [dynamic]Warning;
 ast: AST;
 
 @(private="file")
+statement: [dynamic]Expression;
+
+@(private="file")
 file: u32;
 
 @(private="file")
-peek :: inline proc(int amount = 0) -> Token {
+peek :: inline proc(amount: int = 0) -> Token {
     assert(tokens[amount].kind != TokenKind.MALFORMED);
     return tokens[amount];
 }
@@ -24,11 +33,11 @@ eat :: inline proc() -> Token {
     token := tokens[0];
     tokens = tokens[1:];
     assert(token.kind != TokenKind.MALFORMED);
-    return char;
+    return token;
 }
 
 @(private="file")
-discard :: inline proc(int amount = 1) -> Token {
+discard :: inline proc(amount: int = 1) {
     tokens = tokens[amount:];
 }
 
@@ -43,8 +52,8 @@ check_for_keyword :: proc(name: string) -> bool {
              "i32le", "i64le", "i128le", "uintle", "u8le", "u16le",
              "u32le", "u64le", "u128le", "f32le", "f64le", "intbe", "i8be",
              "i16be", "i32be", "i64be", "i128be", "uintbe", "u8be", "u16be",
-             "u32be", "u64be", "u128be", "f32be", "f64be", "char", "type",
-             "type_id", "ctx":
+             "u32be", "u64be", "u128be", "f32be", "f64be", "type",
+             "type_id", "ctx", "of", "and", "or":
 
             return true;
 
@@ -53,195 +62,148 @@ check_for_keyword :: proc(name: string) -> bool {
     }
 }
 
-consume_parameter :: inline proc() -> Parameter {
-    token = eat();
-    name: string;
-
-    if (token.kind != TokenKind.NAMED) {
-        warning(&warning_queue, .P_PARAM_MISSING_NAME, file, token.line, token.offset);
-        name = "--MALFORMED";
-    }
-
-    token = eat();
-
-    if (token.kind != TokenKind.COLON) {
-        warning(&warning_queue, .P_PARAM_MISSING_COLON, file, token.line, token.offset);
-    }
-
-    // TODO: Account for parametric polymorphism (parapoly)
-
-    token = eat();
-    type: Type;
-
-    if (token.kind != TokenKind.NAMED) {
-        warning(&warning_queue, .P_UNEXPECTED_TYPE_NAME, file, token.line, token.offset);
-        type = RawType{"--MALFORMED"};
+// Parses an NPPType value
+// TODO: Account for pointers and arrays
+parse_npptype :: proc() -> NPPType {
+    if (peek(1).kind == TokenKind.LEFT_PAREN) {
+        return cast(NPPType)parse_polyed();
     }
 
     else {
-        type = RawType{token.name};
+        return cast(NPPType)parse_rawtype();
     }
-
-    return Parameter{name, type};
 }
 
-consume_return :: inline proc() -> RawType {
-
-    // Possibility: Account for parametric polymorphism in return types?
+// Parses a RawType value
+// TODO: Account for pointers and arrays
+parse_rawtype :: proc() -> RawType {
+    token := eat();
 
     if (token.kind == TokenKind.NAMED) {
-        return RawType{token.name};
+        return RawType{token.variant.(NamedToken).name};
     }
 
     else {
-        warning(&warning_queue, .P_INVALID_RETURN_TYPE, file, token.line, token.offset);
-        return RawType{"--MALFORMED"};
+        warning(warning_queue, .P_UNEXPECTED_TOKEN_TYPE,
+                file, token.line, token.offset);
     }
+
+    return RawType{"--MALFORMED"};
 }
 
-consume_procedure :: inline proc() {
-    if (check_for_keyword(token.name)) {
-        warning(&warning_queue, .P_UNEXPECTED_KEYWORD, file, token.line, token.offset);
-    }
+//// Potential bug-bringer. To be determined \\\\
+// Parses a Polyed type
+// TODO: Account for pointers and arrays
+parse_polyed :: proc() -> Polyed {
+    token := eat();
 
-    else {
-        discard(3);
-
-        name := token.name;
-
-        procedure := Procedure {
-                                name, // Procedure Name
-
-                                make(map[string]Parameter, 0, 10), // Parameters
-                                make([dynamic]RawType,     0, 3),  // Return Types
-
-                                Scope { // Body
-                                    ScopeType.PROCEDURE, // Scope Type
-
-                                    make([dynamic]^Expression, 0, 100), // Expressions
-                                    make([dynamic]^Scope,      0, 10),  // Child Scopes
-                                }
-                     };
-
+    if (token.kind == TokenKind.NAMED) {
+        origin := token.variant.(NamedToken).name;
         token = eat();
 
-        if (token.kind != TokenKind.LEFT_PAREN) {
-            warning(&warning_queue, .P_PROC_UNEXPECTED_TOKEN, file, token.line, token.offset);
-        }
-
-        else {
+        if (token.kind == TokenKind.LEFT_PAREN) {
             token = eat();
 
-            for token.kind != TokenKind.RIGHT_PAREN {
-                append(&procedure.parameters, consume_parameter());
+            npp_types := make([dynamic]^NPPType, 0, 5);
 
-                token = eat();
+            for token.kind == TokenKind.RIGHT_PAREN {
+                npp := parse_npptype();
+                append(&npp_types, &npp);
 
-                // If comma is not found, consume malformed parameters until closed
-                if (token.kind != TokenKind.COMMA) {
-                    warning(&warning_queue, .P_PARAM_UNEXPECTED_TOKEN, file, token.line, token.offset);
-
-                    for {
-                        token = peek();
-
-                        if (token.kind = TokenKind.RIGHT_PAREN) {
-                            discard();
-                            break;
-                        }
-
-                        if (len(tokens) == 0) {
-                            warning(&warning_queue, .P_UNEXPECTED_EOF, file, token.line, token.offset);
-                            return procedure;
-                        }
-
-                        append(&procedure.parameters, Parameter{"--MALFORMED", "--MALFORMED"});
-                    }
-
-                    break;
+                if (peek().kind == TokenKind.COMMA) {
+                    discard();
                 }
             }
-        }
 
-        // => is optional
-        if (peek().kind == TokenKind.EQUALS && peek(1).kind == TokenKind.GREATER) {
-            append(&procedure.return_types, consume_return());
-
-            token = eat();
-
-            // If comma is not found, consume malformed return types until closed by a scope
-                if (token.kind != TokenKind.COMMA) {
-                    warning(&warning_queue, .P_RETURN_UNEXPECTED_TOKEN, file, token.line, token.offset);
-
-                    for {
-                        token = peek();
-
-                        if (token.kind = TokenKind.SCOPE_START) {
-                            discard();
-                            break;
-                        }
-
-                        if (len(tokens) == 0) {
-                            warning(&warning_queue, .P_UNEXPECTED_EOF, file, token.line, token.offset);
-                            return procedure;
-                        }
-
-                        append(&procedure.return_types, RawType{"--MALFORMED"});
-                    }
-
-                    break;
-                }
-        }
-
-        else if (peek.kind == TokenKind.SCOPE_START) {
-            // TODO: Parse scopes (aka parse normal expressions)
+            if (len(npp_types) <= 0) {
+                warning(warning_queue, .P_POLYED_MISSING_PARAPOLY,
+                        file, token.line, token.offset);
+            }
+            
+            return Polyed{origin, npp_types[:]};
         }
 
         else {
-            warning(&warning_queue, .P_PROC_UNEXPECTED_TOKEN, file, token.line, token.offset);
-            return;
+            warning(warning_queue, .P_UNEXPECTED_TOKEN_TYPE,
+                    file, token.line, token.offset);
         }
     }
-}
 
-consume_operator :: proc(previous, current, next: Token) {
-    switch current.kind {
-        case TokenKind.ADD:
-            append(&tokens, Add{previous, next});
-
-        case TokenKind.SUB:
-            append(&tokens, Sub{previous, next});
-
-        case TokenKind.MUL:
-            append(&tokens, Mul{previous, next});
-
-        case TokenKind.DIV:
-            append(&tokens, Div{previous, next});
-
-        case TokenKind.MOD:
-            append(&tokens, Mod{previous, next});
+    else {
+        warning(warning_queue, .P_UNEXPECTED_TOKEN_TYPE,
+                file, token.line, token.offset);
     }
+
+    return Polyed{"--MALFORMED", nil};
 }
 
-build_ast :: proc(package_name: string, file: u32, _tokens: [dynamic]Token, _warning_queue: [dynamic]Warning) -> AST {
+// TODO: Account for pointers and arrays
+parse_parapoly :: proc() -> ParaPoly {
+    token := eat();
+
+    if (token.kind == TokenKind.QUESTION) {
+        token = peek();
+
+        if (token.kind == TokenKind.NAMED) {
+            name := token.variant.(NamedToken).name;
+
+            of_type  := make([dynamic]NPPType, 0, 5);
+            and_type := make([dynamic]NPPType, 0, 5);
+            or_type  := make([dynamic]NPPType, 0, 5);
+
+            discard();
+            token = peek();
+
+            for token.kind == TokenKind.NAMED {
+                switch token.variant.(NamedToken).name {
+                    case "of" : append(&of_type,  parse_npptype());
+                    case "and": append(&and_type, parse_npptype());
+                    case "or" : append(&or_type,  parse_npptype());
+
+                    case:
+                        warning(warning_queue, .P_PARAPOLY_UNEXPECTED_TOKEN,
+                                file, token.line, token.offset);
+                        discard();
+                }
+            }
+
+            return ParaPoly{name, of_type[:], and_type[:], or_type[:]};
+        }
+
+        else {
+            warning(warning_queue, .P_UNEXPECTED_TOKEN_TYPE,
+                    file, token.line, token.offset);
+        }
+    }
+
+    else {
+        warning(warning_queue, .P_PARAPOLY_MISSING_QUESTION,
+                file, token.line, token.offset);
+    }
+
+    return ParaPoly{"--MALFORMED", nil, nil, nil};
+}
+
+build_ast :: proc(package_name: string, _file: u32, _tokens: []Token, _warning_queue: [dynamic]Warning) -> AST {
     tokens = _tokens;
     warning_queue = _warning_queue;
+    file = _file;
 
-    ast = AST {package_name,
-
-               //make(map[string] Behavior, 0, 100), // Commented out until it's implemented
-               //make(map[string] Object,   0, 100), // Commented out until it's implemented
-               make(map[string]^Library,  0, 0),     // 0'd out until it's fully implemented
-
-               Procedure {"",
-                          make(map[string]Parameter, 0, 100),
-                          make([dynamic]Type,        0, 100)
-               }
-    };
+    ast_name  := package_name;
+    ast_bvrs  := make([dynamic]Behavior,  0, 100);
+    ast_chars := make([dynamic]Character, 0, 100);
+    ast_objs  := make([dynamic]Object,    0, 100);
+    ast_procs := make([dynamic]Procedure, 0, 100);
+    ast_libs  := make([dynamic]^Library,  0, 100);
+    ast_main: Procedure;
 
     for len(tokens) > 0 {
         token := eat();
+
+        // This can be used for post-parse precedence checking
         has_ops := false;
 
+        // If `::` (constant value)
         if (peek().kind == TokenKind.COLON && peek(1).kind == TokenKind.COLON) {
             discard(2);
 
@@ -249,12 +211,15 @@ build_ast :: proc(package_name: string, file: u32, _tokens: [dynamic]Token, _war
 
             temp_token := peek(2);
 
+            // What the right side is. Can be either a NAMED token or constant value
             if (temp_token.kind == TokenKind.NAMED) {
-                switch temp_token.name {
+                switch temp_token.variant.(NamedToken).name {
                     case "proc":
-                        consume_procedure();
+                        parse_procedure();
                 }
             }
         }
     }
+    ast: AST = nil;
+    return ast;
 }

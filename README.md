@@ -1,4 +1,4 @@
-Offical repository for Avian, the first [Behavior-Oriented Programming](https://avian-lang.org/bop/) Language.
+Offical repository for Avian, the first [Behavioral Programming](https://avian-lang.org/bp/) Language.
 
 # Avian
 TODO: Fill this out
